@@ -1,6 +1,7 @@
 require 'opal'
 require 'haml'
 require 'fssm'
+require 'os'
 require_relative 'index'
 require_relative 'debug_server'
 
@@ -12,7 +13,11 @@ module Electron
       yield config if block_given?
 
       task :default => :build do
-        sh "electron ."
+        if config.enable_linux_transparency && OS.linux?
+          sh 'electron . --enable-transparent-visuals --disable-gpu'
+        else
+          sh 'electron .'
+        end
       end
 
       task :config do
@@ -102,7 +107,8 @@ module Electron
       @config.paths = Array.new(Opal.paths)
       @config.paths << File.expand_path('../../opal', __FILE__)
 
-      @config.app_class = "main"
+      @config.app_class = 'main'
+      @config.enable_linux_transparency = true
 
       @config
     end
