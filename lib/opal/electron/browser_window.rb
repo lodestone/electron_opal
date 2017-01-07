@@ -1,15 +1,30 @@
 require 'electron'
 require 'electron/string_enhancements'
 
+`const remote = require('electron').remote;`
+`const { BrowserWindow } = require('electron')`
+
 module Electron
   class BrowserWindow
     include Native
 
-    def initialize(name = 'main_window', params = {}, debug: false)
-      `var { BrowserWindow } = require('electron')`
-      @native = JS.new(`BrowserWindow`, `params.$to_n()`)
-      @native.JS.loadURL("file://#{`__dirname`}/#{name}.html")
-      @native.JS[:webContents].JS.openDevTools if debug
+    def initialize(name = 'main_window', params = {}, debug: false, base: nil)
+      @native = base || JS.new(`BrowserWindow`, `params.$to_n()`)
+      unless base
+        @native.JS[:name] = name
+        @native.JS.loadURL("file://#{`__dirname`}/#{name}.html")
+        @native.JS[:webContents].JS.openDevTools if debug
+      end
+      init_instance_methods
+    end
+
+    def self.current
+      BrowserWindow.new(nil, nil, base: `remote.getCurrentWindow()`)
+    end
+
+    private
+
+    def init_instance_methods
       methods_ruby = []
       %x{
         for(var method in #@native) {
